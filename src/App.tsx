@@ -1,46 +1,37 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { Toaster } from "@/components/ui/toaster";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import LoginForm from "@/components/auth/LoginForm";
 import Dashboard from "@/pages/Dashboard";
+import Accounts from "@/pages/Accounts";
+import Commissions from "@/pages/Commissions";
+import Residuals from "@/pages/Residuals";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/auth/login" element={<div className="min-h-screen flex items-center justify-center bg-gray-100"><LoginForm /></div>} />
+          <Route path="/auth/login" element={<LoginForm />} />
           
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={
-            <AuthGuard>
-              <DashboardLayout>
-                <Dashboard />
-              </DashboardLayout>
-            </AuthGuard>
-          } />
-          
-          {/* Admin Routes */}
-          <Route path="/admin/*" element={
-            <AuthGuard requireAdmin>
-              <DashboardLayout>
-                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              </DashboardLayout>
-            </AuthGuard>
-          } />
+          <Route element={<AuthGuard />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/accounts" element={<Accounts />} />
+              <Route path="/commissions" element={<Commissions />} />
+              <Route path="/residuals" element={<Residuals />} />
+            </Route>
+          </Route>
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
+  );
+}
 
 export default App;
