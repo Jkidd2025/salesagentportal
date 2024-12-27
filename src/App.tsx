@@ -19,12 +19,16 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth/login" element={<LoginForm />} />
           
-          <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/commissions" element={<Commissions />} />
-            <Route path="/residuals" element={<Residuals />} />
-          </Route>
+          <Route element={<AuthGuard>
+            <DashboardLayout>
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/accounts" element={<Accounts />} />
+                <Route path="/commissions" element={<Commissions />} />
+                <Route path="/residuals" element={<Residuals />} />
+              </Routes>
+            </DashboardLayout>
+          </AuthGuard>} />
         </Routes>
       </Router>
       <Toaster />
