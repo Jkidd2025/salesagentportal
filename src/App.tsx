@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { SignUpForm } from "@/components/auth/SignUpForm";
 import Dashboard from "@/pages/Dashboard";
 import Accounts from "@/pages/Accounts";
 import Commissions from "@/pages/Commissions";
@@ -18,6 +19,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth/login" element={<LoginForm />} />
+          <Route path="/auth/signup" element={<SignUpForm />} />
           
           <Route element={<AuthGuard>
             <DashboardLayout>

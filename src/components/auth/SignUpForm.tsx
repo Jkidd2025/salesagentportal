@@ -6,52 +6,45 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 
-export const LoginForm = () => {
+export const SignUpForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
       });
 
       if (error) {
-        if (error.message === "Email not confirmed") {
-          toast({
-            title: "Email Not Verified",
-            description: "Please check your email and click the verification link to complete your registration.",
-            variant: "destructive",
-          });
-        } else if (error.message === "Invalid login credentials") {
-          toast({
-            title: "Login Failed",
-            description: "The email or password you entered is incorrect. Please try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Sign Up Failed",
+          description: error.message,
+          variant: "destructive",
+        });
         return;
       }
 
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
+        title: "Success!",
+        description: "Please check your email to verify your account.",
       });
 
-      navigate("/dashboard");
+      // Redirect to login page after successful signup
+      navigate("/auth/login");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -63,19 +56,29 @@ export const LoginForm = () => {
     }
   };
 
-  const handleSignUp = () => {
-    navigate("/auth/signup");
+  const handleBackToLogin = () => {
+    navigate("/auth/login");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <Card className="w-[400px]">
         <CardHeader>
-          <CardTitle>Welcome Back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle>Create Account</CardTitle>
+          <CardDescription>Sign up for a new account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                type="text"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                autoComplete="name"
+              />
+            </div>
             <div className="space-y-2">
               <Input
                 type="email"
@@ -93,17 +96,17 @@ export const LoginForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Button variant="link" onClick={handleSignUp}>
-            Don't have an account? Sign up
+          <Button variant="link" onClick={handleBackToLogin}>
+            Already have an account? Sign in
           </Button>
         </CardFooter>
       </Card>
