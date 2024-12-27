@@ -47,31 +47,31 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="space-y-4">
+      <h1 className="text-lg font-semibold">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Active Accounts</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.activeAccounts}</p>
+            <p className="text-2xl font-semibold">{stats.activeAccounts}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Total Commissions</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Commissions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">${stats.totalCommissions.toFixed(2)}</p>
+            <p className="text-2xl font-semibold">${stats.totalCommissions.toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Total Residuals</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Residuals</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">${stats.totalResiduals.toFixed(2)}</p>
+            <p className="text-2xl font-semibold">${stats.totalResiduals.toFixed(2)}</p>
           </CardContent>
         </Card>
       </div>

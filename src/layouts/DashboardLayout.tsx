@@ -54,15 +54,15 @@ export const DashboardLayout = () => {
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-sm">
+      <div className="w-64 bg-sidebar border-r border-sidebar-border">
         <div className="h-full flex flex-col">
           <div className="p-4">
-            <h2 className="text-lg font-medium text-gray-800">Portal</h2>
+            <h2 className="text-base font-medium text-sidebar-foreground">Portal</h2>
           </div>
           <nav className="flex-1 p-2 space-y-1">
             <Link
               to="/dashboard"
-              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+              className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
             >
               <LayoutDashboard className="w-4 h-4 mr-3" />
               Dashboard
@@ -70,7 +70,7 @@ export const DashboardLayout = () => {
             {isAdmin && (
               <Link
                 to="/accounts"
-                className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+                className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
               >
                 <Users className="w-4 h-4 mr-3" />
                 Accounts
@@ -78,23 +78,23 @@ export const DashboardLayout = () => {
             )}
             <Link
               to="/commissions"
-              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+              className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
             >
               <DollarSign className="w-4 h-4 mr-3" />
               Commissions
             </Link>
             <Link
               to="/residuals"
-              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+              className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
             >
               <LineChart className="w-4 h-4 mr-3" />
               Residuals
             </Link>
           </nav>
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-sidebar-border">
             <Button
               variant="ghost"
-              className="w-full justify-start text-sm text-gray-700"
+              className="w-full justify-start text-sm text-sidebar-foreground"
               onClick={handleSignOut}
             >
               <LogOut className="w-4 h-4 mr-3" />

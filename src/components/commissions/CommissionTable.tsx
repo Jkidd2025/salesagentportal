@@ -33,40 +33,40 @@ export function CommissionTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Account</TableHead>
+          <TableHead className="text-xs">Account</TableHead>
           <TableHead 
-            className="cursor-pointer"
+            className="text-xs cursor-pointer"
             onClick={() => onSort("date")}
           >
             Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
           </TableHead>
           <TableHead 
-            className="cursor-pointer text-right"
+            className="text-xs cursor-pointer text-right"
             onClick={() => onSort("amount")}
           >
             Amount {sortBy === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
           </TableHead>
-          <TableHead className="text-right">Rate</TableHead>
+          <TableHead className="text-xs text-right">Rate</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {commissions?.map((commission) => (
           <TableRow key={commission.id}>
-            <TableCell>{commission.account?.name || "N/A"}</TableCell>
-            <TableCell>
+            <TableCell className="text-sm">{commission.account?.name || "N/A"}</TableCell>
+            <TableCell className="text-sm">
               {format(new Date(commission.transaction_date), "MMM d, yyyy")}
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-sm text-right">
               ${commission.amount.toFixed(2)}
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-sm text-right">
               {(commission.rate * 100).toFixed(1)}%
             </TableCell>
           </TableRow>
         ))}
         {(!commissions || commissions.length === 0) && (
           <TableRow>
-            <TableCell colSpan={4} className="text-center">
+            <TableCell colSpan={4} className="text-sm text-center">
               No commissions found
             </TableCell>
           </TableRow>
