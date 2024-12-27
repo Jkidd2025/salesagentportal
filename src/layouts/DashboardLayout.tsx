@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Outlet } from "react-router-dom";
+import { useNavigate, Outlet, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { LayoutDashboard, Users, DollarSign, LineChart, LogOut } from "lucide-react";
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -10,89 +11,105 @@ export const DashboardLayout = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", session.user.id)
-          .single();
-        
-        setIsAdmin(!!profile?.is_admin);
-      }
-    };
-
-    checkAdmin();
+    checkUserRole();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
-    navigate("/auth/login");
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      setIsAdmin(profile?.is_admin || false);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+
+      navigate("/auth/login");
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <span className="text-xl font-bold">Sales Agent Portal</span>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Dashboard
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/accounts")}
-                >
-                  Accounts
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/commissions")}
-                >
-                  Commissions
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/residuals")}
-                >
-                  Residuals
-                </Button>
-                {isAdmin && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate("/admin")}
-                  >
-                    Admin
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                onClick={handleLogout}
+    <div className="min-h-screen flex bg-gray-100">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-sm">
+        <div className="h-full flex flex-col">
+          <div className="p-4">
+            <h2 className="text-lg font-medium text-gray-800">Portal</h2>
+          </div>
+          <nav className="flex-1 p-2 space-y-1">
+            <Link
+              to="/dashboard"
+              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+            >
+              <LayoutDashboard className="w-4 h-4 mr-3" />
+              Dashboard
+            </Link>
+            {isAdmin && (
+              <Link
+                to="/accounts"
+                className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
               >
-                Logout
-              </Button>
-            </div>
+                <Users className="w-4 h-4 mr-3" />
+                Accounts
+              </Link>
+            )}
+            <Link
+              to="/commissions"
+              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+            >
+              <DollarSign className="w-4 h-4 mr-3" />
+              Commissions
+            </Link>
+            <Link
+              to="/residuals"
+              className="flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 group"
+            >
+              <LineChart className="w-4 h-4 mr-3" />
+              Residuals
+            </Link>
+          </nav>
+          <div className="p-4 border-t">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sm text-gray-700"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-3" />
+              Sign out
+            </Button>
           </div>
         </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Outlet />
-      </main>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1">
+        <main className="p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
