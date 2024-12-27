@@ -24,7 +24,13 @@ export const LoginForm = () => {
       });
 
       if (error) {
-        if (error.message === "Invalid login credentials") {
+        if (error.message === "Email not confirmed") {
+          toast({
+            title: "Email Not Verified",
+            description: "Please check your email and click the verification link to complete your registration.",
+            variant: "destructive",
+          });
+        } else if (error.message === "Invalid login credentials") {
           toast({
             title: "Login Failed",
             description: "The email or password you entered is incorrect. Please try again.",
