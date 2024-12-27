@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { CalendarIcon, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -13,28 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { ResidualForm, ResidualFormValues } from "@/components/residuals/ResidualForm";
+import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
+import { AccountFilter } from "@/components/shared/AccountFilter";
+import { ResidualTable } from "@/components/residuals/ResidualTable";
 
 const Residuals = () => {
   const { toast } = useToast();
@@ -169,106 +151,26 @@ const Residuals = () => {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
-            <div className="w-[200px]">
-              <Select
-                value={selectedAccount}
-                onValueChange={setSelectedAccount}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by account" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Accounts</SelectItem>
-                  {accounts?.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[300px] justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={(range) => {
-                    if (range?.from && range?.to) {
-                      setDateRange({ from: range.from, to: range.to });
-                    }
-                  }}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
+            <AccountFilter
+              accounts={accounts}
+              selectedAccount={selectedAccount}
+              onAccountChange={setSelectedAccount}
+            />
+            <DateRangeFilter
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
           </div>
 
           {isLoading ? (
             <div className="text-center py-4">Loading residuals...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Account</TableHead>
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort("date")}
-                  >
-                    Period {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer text-right"
-                    onClick={() => handleSort("amount")}
-                  >
-                    Amount {sortBy === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
-                  </TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {residuals?.map((residual) => (
-                  <TableRow key={residual.id}>
-                    <TableCell>{residual.account?.name || "N/A"}</TableCell>
-                    <TableCell>
-                      {format(new Date(residual.period_start), "MMM d, yyyy")} -{" "}
-                      {format(new Date(residual.period_end), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${residual.amount.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {(residual.rate * 100).toFixed(1)}%
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!residuals || residuals.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center">
-                      No residuals found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <ResidualTable
+              residuals={residuals}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+            />
           )}
         </CardContent>
       </Card>

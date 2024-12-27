@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import LoginForm from "@/components/auth/LoginForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 import Dashboard from "@/pages/Dashboard";
 import Accounts from "@/pages/Accounts";
 import Commissions from "@/pages/Commissions";
@@ -19,13 +19,11 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth/login" element={<LoginForm />} />
           
-          <Route element={<AuthGuard />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/accounts" element={<Accounts />} />
-              <Route path="/commissions" element={<Commissions />} />
-              <Route path="/residuals" element={<Residuals />} />
-            </Route>
+          <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/accounts" element={<Accounts />} />
+            <Route path="/commissions" element={<Commissions />} />
+            <Route path="/residuals" element={<Residuals />} />
           </Route>
         </Routes>
       </Router>
