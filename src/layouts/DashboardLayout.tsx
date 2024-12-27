@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
-
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+export const DashboardLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -95,7 +91,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </nav>
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
+        <Outlet />
       </main>
     </div>
   );

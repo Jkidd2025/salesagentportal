@@ -21,16 +21,12 @@ function App() {
           <Route path="/auth/login" element={<LoginForm />} />
           <Route path="/auth/signup" element={<SignUpForm />} />
           
-          <Route element={<AuthGuard>
-            <DashboardLayout>
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/accounts" element={<Accounts />} />
-                <Route path="/commissions" element={<Commissions />} />
-                <Route path="/residuals" element={<Residuals />} />
-              </Routes>
-            </DashboardLayout>
-          </AuthGuard>} />
+          <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/accounts" element={<Accounts />} />
+            <Route path="/commissions" element={<Commissions />} />
+            <Route path="/residuals" element={<Residuals />} />
+          </Route>
         </Routes>
       </Router>
       <Toaster />
