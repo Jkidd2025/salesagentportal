@@ -15,6 +15,42 @@ export const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const createTestUser = async (email: string, password: string, isAdmin: boolean) => {
+    try {
+      // First try to sign up
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: isAdmin ? "Admin User" : "Regular User",
+          }
+        }
+      });
+
+      if (signUpError && signUpError.message !== "User already registered") {
+        throw signUpError;
+      }
+
+      // If user exists or was created, update their profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: (await supabase.auth.getUser()).data.user?.id,
+          full_name: isAdmin ? "Admin User" : "Regular User",
+          is_admin: isAdmin,
+          status: 'active'
+        });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+    } catch (error: any) {
+      console.error("Error creating test user:", error);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -26,26 +62,22 @@ export const LoginForm = () => {
       });
 
       if (error) {
-        if (error.message === "Email not confirmed") {
-          toast({
-            title: "Email Not Verified",
-            description: "Please check your email and click the verification link to complete your registration.",
-            variant: "destructive",
+        // If login fails and it's a test account, try to create it
+        if ((email === 'admin@example.com' && password === 'admin123') ||
+            (email === 'user@example.com' && password === 'user123')) {
+          await createTestUser(email, password, email === 'admin@example.com');
+          // Try logging in again
+          const { error: retryError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
           });
-        } else if (error.message === "Invalid login credentials") {
-          toast({
-            title: "Login Failed",
-            description: "The email or password you entered is incorrect. Please try again.",
-            variant: "destructive",
-          });
+          
+          if (retryError) {
+            throw retryError;
+          }
         } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
+          throw error;
         }
-        return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +97,7 @@ export const LoginForm = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
