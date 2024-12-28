@@ -13,24 +13,33 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          last_transaction_date: string | null
           name: string
           status: string | null
+          total_commissions: number | null
+          total_residuals: number | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          last_transaction_date?: string | null
           name: string
           status?: string | null
+          total_commissions?: number | null
+          total_residuals?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          last_transaction_date?: string | null
           name?: string
           status?: string | null
+          total_commissions?: number | null
+          total_residuals?: number | null
           updated_at?: string | null
           user_id?: string | null
         }

@@ -17,19 +17,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AccountEditDialog } from "@/components/accounts/AccountEditDialog";
 
 interface Account {
   id: string;
   name: string;
   status: string;
   created_at: string;
+  total_commissions: number;
+  total_residuals: number;
+  last_transaction_date: string;
 }
 
 const Accounts = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: accounts, isLoading } = useQuery({
+  const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,6 +58,13 @@ const Accounts = () => {
   const filteredAccounts = accounts?.filter((account) =>
     account.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -83,7 +95,10 @@ const Accounts = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Created At</TableHead>
+                    <TableHead>Total Commissions</TableHead>
+                    <TableHead>Total Residuals</TableHead>
+                    <TableHead>Last Transaction</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -91,24 +106,31 @@ const Accounts = () => {
                     <TableRow key={account.id}>
                       <TableCell>{account.name}</TableCell>
                       <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            account.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                        <Badge
+                          variant={account.status === "active" ? "default" : "secondary"}
                         >
                           {account.status}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(account.created_at).toLocaleDateString()}
+                        {formatCurrency(account.total_commissions)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(account.total_residuals)}
+                      </TableCell>
+                      <TableCell>
+                        {account.last_transaction_date
+                          ? new Date(account.last_transaction_date).toLocaleDateString()
+                          : "No transactions"}
+                      </TableCell>
+                      <TableCell>
+                        <AccountEditDialog account={account} onUpdate={refetch} />
                       </TableCell>
                     </TableRow>
                   ))}
                   {filteredAccounts?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center">
+                      <TableCell colSpan={6} className="text-center">
                         No accounts found
                       </TableCell>
                     </TableRow>
