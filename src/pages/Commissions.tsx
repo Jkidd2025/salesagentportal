@@ -1,68 +1,63 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { CommissionForm, CommissionFormValues } from "@/components/commissions/CommissionForm";
-import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
-import { AccountFilter } from "@/components/shared/AccountFilter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CommissionTable } from "@/components/commissions/CommissionTable";
+import { CommissionForm } from "@/components/commissions/CommissionForm";
+import { AccountFilter } from "@/components/shared/AccountFilter";
+import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
+
+interface Commission {
+  id: string;
+  account_id: string;
+  rate: number;
+  amount: number;
+  transaction_date: string;
+}
 
 const Commissions = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [sortBy, setSortBy] = useState<"date" | "amount">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [selectedAccount, setSelectedAccount] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<{
-    from: Date;
-    to: Date;
-  }>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("accounts")
-        .select("id, name")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
 
   const { data: commissions, isLoading } = useQuery({
-    queryKey: ["commissions", sortBy, sortOrder, selectedAccount, dateRange],
+    queryKey: ["commissions", selectedAccountId, dateRange],
     queryFn: async () => {
       let query = supabase
         .from("commissions")
-        .select(`
-          *,
-          account:accounts(name)
-        `)
-        .gte("transaction_date", format(dateRange.from, "yyyy-MM-dd"))
-        .lte("transaction_date", format(dateRange.to, "yyyy-MM-dd"))
-        .order(sortBy === "date" ? "transaction_date" : "amount", {
-          ascending: sortOrder === "asc",
-        });
+        .select("*")
+        .order("transaction_date", { ascending: false });
 
-      if (selectedAccount !== "all") {
-        query = query.eq("account_id", selectedAccount);
+      if (selectedAccountId) {
+        query = query.eq("account_id", selectedAccountId);
+      }
+
+      if (dateRange) {
+        query = query
+          .gte("transaction_date", dateRange.from.toISOString())
+          .lte("transaction_date", dateRange.to.toISOString());
       }
 
       const { data, error } = await query;
@@ -73,106 +68,123 @@ const Commissions = () => {
           description: error.message,
           variant: "destructive",
         });
-        throw error;
+        return [];
       }
 
-      return data;
+      return data as Commission[];
     },
   });
 
-  const createCommission = useMutation({
-    mutationFn: async (values: CommissionFormValues) => {
-      const { error } = await supabase.from("commissions").insert({
-        account_id: values.accountId,
-        amount: values.amount,
-        rate: values.rate,
-        transaction_date: format(values.transactionDate, "yyyy-MM-dd"),
-      });
-
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("commissions").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
       toast({
         title: "Success",
-        description: "Commission created successfully",
+        description: "Commission deleted successfully",
       });
-      setIsDialogOpen(false);
+      setIsDeleteDialogOpen(false);
+      setSelectedCommission(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error creating commission",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleSort = (column: "date" | "amount") => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("desc");
-    }
+  const handleEdit = (commission: Commission) => {
+    setSelectedCommission(commission);
+    setIsFormOpen(true);
   };
 
-  const handleCreateCommission = async (values: CommissionFormValues) => {
-    await createCommission.mutate(values);
+  const handleDelete = (commission: Commission) => {
+    setSelectedCommission(commission);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedCommission(null);
+  };
+
+  const confirmDelete = () => {
+    if (selectedCommission) {
+      deleteMutation.mutate(selectedCommission.id);
+    }
   };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Commissions</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Commission
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Commission</DialogTitle>
-            </DialogHeader>
-            <CommissionForm
-              onSubmit={handleCreateCommission}
-              onCancel={() => setIsDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsFormOpen(true)}>Add Commission</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Commission History</CardTitle>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <AccountFilter
+            value={selectedAccountId}
+            onChange={setSelectedAccountId}
+          />
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Commission List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <AccountFilter
-              accounts={accounts}
-              selectedAccount={selectedAccount}
-              onAccountChange={setSelectedAccount}
-            />
-            <DateRangeFilter
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
-
           {isLoading ? (
             <div className="text-center py-4">Loading commissions...</div>
           ) : (
             <CommissionTable
-              commissions={commissions}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSort={handleSort}
+              commissions={commissions || []}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCommission ? "Edit Commission" : "Add Commission"}
+            </DialogTitle>
+          </DialogHeader>
+          <CommissionForm
+            initialData={selectedCommission}
+            onSuccess={handleFormClose}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              commission record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

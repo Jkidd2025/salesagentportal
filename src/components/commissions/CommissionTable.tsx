@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -7,71 +7,77 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface Commission {
   id: string;
-  account: { name: string };
-  transaction_date: string;
-  amount: number;
+  account_id: string;
   rate: number;
+  amount: number;
+  transaction_date: string;
 }
 
 interface CommissionTableProps {
-  commissions?: Commission[];
-  sortBy: "date" | "amount";
-  sortOrder: "asc" | "desc";
-  onSort: (column: "date" | "amount") => void;
+  commissions: Commission[];
+  onEdit: (commission: Commission) => void;
+  onDelete: (commission: Commission) => void;
 }
 
-export function CommissionTable({
-  commissions,
-  sortBy,
-  sortOrder,
-  onSort,
-}: CommissionTableProps) {
+export const CommissionTable = ({ commissions, onEdit, onDelete }: CommissionTableProps) => {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-xs">Account</TableHead>
-          <TableHead 
-            className="text-xs cursor-pointer"
-            onClick={() => onSort("date")}
-          >
-            Date {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
-          </TableHead>
-          <TableHead 
-            className="text-xs cursor-pointer text-right"
-            onClick={() => onSort("amount")}
-          >
-            Amount {sortBy === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
-          </TableHead>
-          <TableHead className="text-xs text-right">Rate</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {commissions?.map((commission) => (
-          <TableRow key={commission.id}>
-            <TableCell className="text-sm">{commission.account?.name || "N/A"}</TableCell>
-            <TableCell className="text-sm">
-              {format(new Date(commission.transaction_date), "MMM d, yyyy")}
-            </TableCell>
-            <TableCell className="text-sm text-right">
-              ${commission.amount.toFixed(2)}
-            </TableCell>
-            <TableCell className="text-sm text-right">
-              {(commission.rate * 100).toFixed(1)}%
-            </TableCell>
-          </TableRow>
-        ))}
-        {(!commissions || commissions.length === 0) && (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell colSpan={4} className="text-sm text-center">
-              No commissions found
-            </TableCell>
+            <TableHead>Transaction Date</TableHead>
+            <TableHead>Rate</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Commission</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {commissions.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center">
+                No commissions found
+              </TableCell>
+            </TableRow>
+          ) : (
+            commissions.map((commission) => (
+              <TableRow key={commission.id}>
+                <TableCell>
+                  {new Date(commission.transaction_date).toLocaleDateString()}
+                </TableCell>
+                <TableCell>{commission.rate}%</TableCell>
+                <TableCell>{formatCurrency(commission.amount)}</TableCell>
+                <TableCell>
+                  {formatCurrency((commission.amount * commission.rate) / 100)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(commission)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(commission)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
-}
+};

@@ -1,58 +1,103 @@
-import { useForm } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { AccountSelect } from "@/components/shared/AccountSelect";
 import { AmountRateInputs } from "@/components/shared/AmountRateInputs";
 import { DatePickerField } from "@/components/shared/DatePickerField";
 
-interface CommissionFormProps {
-  onSubmit: (values: CommissionFormValues) => Promise<void>;
-  onCancel: () => void;
-}
-
-export interface CommissionFormValues {
-  accountId: string;
-  amount: number;
+interface Commission {
+  id: string;
+  account_id: string;
   rate: number;
-  transactionDate: Date;
+  amount: number;
+  transaction_date: string;
 }
 
-export function CommissionForm({ onSubmit, onCancel }: CommissionFormProps) {
-  const form = useForm<CommissionFormValues>();
+interface CommissionFormProps {
+  initialData?: Commission | null;
+  onSuccess: () => void;
+}
 
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("accounts")
-        .select("id, name")
-        .order("name");
+export const CommissionForm = ({ initialData, onSuccess }: CommissionFormProps) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const [accountId, setAccountId] = useState(initialData?.account_id || "");
+  const [rate, setRate] = useState(initialData?.rate || 0);
+  const [amount, setAmount] = useState(initialData?.amount || 0);
+  const [transactionDate, setTransactionDate] = useState<Date>(
+    initialData ? new Date(initialData.transaction_date) : new Date()
+  );
 
-      if (error) throw error;
-      return data;
+  const mutation = useMutation({
+    mutationFn: async (data: Omit<Commission, "id">) => {
+      if (initialData) {
+        const { error } = await supabase
+          .from("commissions")
+          .update(data)
+          .eq("id", initialData.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("commissions").insert([data]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commissions"] });
+      toast({
+        title: "Success",
+        description: `Commission ${initialData ? "updated" : "added"} successfully`,
+      });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <AccountSelect form={form} accounts={accounts} />
-        <AmountRateInputs form={form} />
-        <DatePickerField
-          form={form}
-          name="transactionDate"
-          label="Transaction Date"
-        />
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit">Create Commission</Button>
-        </div>
-      </form>
-    </Form>
+    try {
+      await mutation.mutateAsync({
+        account_id: accountId,
+        rate,
+        amount,
+        transaction_date: transactionDate.toISOString(),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <AccountSelect
+        value={accountId}
+        onChange={(value) => setAccountId(value)}
+        required
+      />
+      <AmountRateInputs
+        amount={amount}
+        onAmountChange={setAmount}
+        rate={rate}
+        onRateChange={setRate}
+      />
+      <DatePickerField
+        label="Transaction Date"
+        value={transactionDate}
+        onChange={setTransactionDate}
+      />
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? "Saving..." : initialData ? "Update Commission" : "Add Commission"}
+      </Button>
+    </form>
   );
-}
+};
