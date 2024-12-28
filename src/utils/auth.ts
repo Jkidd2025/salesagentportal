@@ -20,6 +20,8 @@ export async function createOrUpdateTestUser(email: string, password: string, is
           full_name: isAdmin ? "Admin User" : "Regular User",
           is_admin: isAdmin,
           status: 'active'
+        }, {
+          onConflict: 'id'
         });
 
       if (profileError) {
@@ -34,15 +36,13 @@ export async function createOrUpdateTestUser(email: string, password: string, is
     if (signInError) {
       console.log("Creating new test user:", email);
       
-      // First create the auth user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: isAdmin ? "Admin User" : "Regular User",
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          }
         }
       });
 
@@ -68,6 +68,19 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       if (newSignInError) {
         console.error("Error signing in after creation:", newSignInError);
         throw newSignInError;
+      }
+
+      // Update the profile with admin status if needed
+      if (isAdmin) {
+        const { error: adminUpdateError } = await supabase
+          .from('profiles')
+          .update({ is_admin: true })
+          .eq('id', newSignInData.user.id);
+
+        if (adminUpdateError) {
+          console.error("Error updating admin status:", adminUpdateError);
+          throw adminUpdateError;
+        }
       }
 
       return { user: newSignInData.user, error: null };
