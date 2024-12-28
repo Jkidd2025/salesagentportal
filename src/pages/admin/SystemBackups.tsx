@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Json } from "@/integrations/supabase/types";
 
 interface BackupData {
   accounts: any[];
