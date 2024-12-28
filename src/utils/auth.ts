@@ -2,14 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 export async function createOrUpdateTestUser(email: string, password: string, isAdmin: boolean) {
   try {
-    // First check if user exists by trying to sign in
+    // First try to sign in
+    console.log("Attempting to sign in test user:", email);
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // If sign in successful, update profile and return
-    if (signInData.user) {
+    // If sign in successful, just update profile
+    if (signInData?.user) {
       console.log("Test user exists, updating profile:", email);
       
       const { error: profileError } = await supabase
@@ -29,10 +30,11 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       return { user: signInData.user, error: null };
     }
 
-    // If user doesn't exist (sign in failed), create new user
+    // If sign in failed, try to create the user
     if (signInError) {
       console.log("Creating new test user:", email);
       
+      // First create the auth user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -40,7 +42,7 @@ export async function createOrUpdateTestUser(email: string, password: string, is
           data: {
             full_name: isAdmin ? "Admin User" : "Regular User",
           },
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
@@ -53,7 +55,11 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         throw new Error("No user returned after signup");
       }
 
-      // After creating user, try signing in
+      // Wait a moment for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Try signing in with the new credentials
+      console.log("Signing in with new credentials:", email);
       const { data: newSignInData, error: newSignInError } = await supabase.auth.signInWithPassword({
         email,
         password,
