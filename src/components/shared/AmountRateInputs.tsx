@@ -1,59 +1,41 @@
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
 
 interface AmountRateInputsProps {
-  form: UseFormReturn<any>;
+  amount: number;
+  onAmountChange: (value: number) => void;
+  rate: number;
+  onRateChange: (value: number) => void;
 }
 
-export function AmountRateInputs({ form }: AmountRateInputsProps) {
+export function AmountRateInputs({ 
+  amount, 
+  onAmountChange, 
+  rate, 
+  onRateChange 
+}: AmountRateInputsProps) {
   return (
-    <>
-      <FormField
-        control={form.control}
-        name="amount"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Amount</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Enter amount"
-                {...field}
-                onChange={(e) => field.onChange(parseFloat(e.target.value))}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Amount</label>
+        <Input
+          type="number"
+          step="0.01"
+          value={amount}
+          onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
+          placeholder="Enter amount"
+        />
+      </div>
 
-      <FormField
-        control={form.control}
-        name="rate"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Rate (%)</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                step="0.1"
-                placeholder="Enter rate"
-                {...field}
-                onChange={(e) => field.onChange(parseFloat(e.target.value) / 100)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Rate (%)</label>
+        <Input
+          type="number"
+          step="0.1"
+          value={rate}
+          onChange={(e) => onRateChange(parseFloat(e.target.value) || 0)}
+          placeholder="Enter rate"
+        />
+      </div>
+    </div>
   );
 }

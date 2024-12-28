@@ -9,24 +9,24 @@ import {
 } from "@/components/ui/popover";
 
 interface DateRangeFilterProps {
-  dateRange: { from: Date; to: Date };
-  onDateRangeChange: (range: { from: Date; to: Date }) => void;
+  value: { from: Date; to: Date };
+  onChange: (range: { from: Date; to: Date }) => void;
 }
 
-export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilterProps) {
+export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-[300px] justify-start text-left font-normal">
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {dateRange?.from ? (
-            dateRange.to ? (
+          {value?.from ? (
+            value.to ? (
               <>
-                {format(dateRange.from, "LLL dd, y")} -{" "}
-                {format(dateRange.to, "LLL dd, y")}
+                {format(value.from, "LLL dd, y")} -{" "}
+                {format(value.to, "LLL dd, y")}
               </>
             ) : (
-              format(dateRange.from, "LLL dd, y")
+              format(value.from, "LLL dd, y")
             )
           ) : (
             <span>Pick a date range</span>
@@ -37,14 +37,14 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
         <Calendar
           initialFocus
           mode="range"
-          defaultMonth={dateRange?.from}
+          defaultMonth={value?.from}
           selected={{
-            from: dateRange.from,
-            to: dateRange.to,
+            from: value.from,
+            to: value.to,
           }}
           onSelect={(range) => {
             if (range?.from && range?.to) {
-              onDateRangeChange({ from: range.from, to: range.to });
+              onChange({ from: range.from, to: range.to });
             }
           }}
           numberOfMonths={2}
