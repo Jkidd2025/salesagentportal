@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ResidualForm, ResidualFormValues } from "@/components/residuals/ResidualForm";
 import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
@@ -32,6 +42,8 @@ const Residuals = () => {
     to: endOfMonth(new Date()),
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedResidual, setSelectedResidual] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: accounts } = useQuery({
     queryKey: ["accounts"],
@@ -109,6 +121,66 @@ const Residuals = () => {
     },
   });
 
+  const updateResidual = useMutation({
+    mutationFn: async (values: ResidualFormValues & { id: string }) => {
+      const { error } = await supabase
+        .from("residuals")
+        .update({
+          account_id: values.accountId,
+          amount: values.amount,
+          rate: values.rate,
+          period_start: format(values.periodStart, "yyyy-MM-dd"),
+          period_end: format(values.periodEnd, "yyyy-MM-dd"),
+        })
+        .eq("id", values.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["residuals"] });
+      toast({
+        title: "Success",
+        description: "Residual updated successfully",
+      });
+      setIsDialogOpen(false);
+      setSelectedResidual(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating residual",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteResidual = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("residuals")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["residuals"] });
+      toast({
+        title: "Success",
+        description: "Residual deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedResidual(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting residual",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSort = (column: "date" | "amount") => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -122,11 +194,39 @@ const Residuals = () => {
     await createResidual.mutate(values);
   };
 
+  const handleEditResidual = (residual: any) => {
+    setSelectedResidual({
+      ...residual,
+      periodStart: new Date(residual.period_start),
+      periodEnd: new Date(residual.period_end),
+      accountId: residual.account_id,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleUpdateResidual = async (values: ResidualFormValues) => {
+    if (!selectedResidual) return;
+    await updateResidual.mutate({ ...values, id: selectedResidual.id });
+  };
+
+  const handleDeleteClick = (residual: any) => {
+    setSelectedResidual(residual);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedResidual) return;
+    await deleteResidual.mutate(selectedResidual.id);
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Residuals</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setSelectedResidual(null);
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -135,11 +235,17 @@ const Residuals = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Residual</DialogTitle>
+              <DialogTitle>
+                {selectedResidual ? "Edit Residual" : "Create New Residual"}
+              </DialogTitle>
             </DialogHeader>
             <ResidualForm
-              onSubmit={handleCreateResidual}
-              onCancel={() => setIsDialogOpen(false)}
+              onSubmit={selectedResidual ? handleUpdateResidual : handleCreateResidual}
+              onCancel={() => {
+                setIsDialogOpen(false);
+                setSelectedResidual(null);
+              }}
+              initialValues={selectedResidual}
             />
           </DialogContent>
         </Dialog>
@@ -170,10 +276,27 @@ const Residuals = () => {
               sortBy={sortBy}
               sortOrder={sortOrder}
               onSort={handleSort}
+              onEdit={handleEditResidual}
+              onDelete={handleDeleteClick}
             />
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the residual record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

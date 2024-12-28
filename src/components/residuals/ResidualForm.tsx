@@ -10,6 +10,7 @@ import { DatePickerField } from "@/components/shared/DatePickerField";
 interface ResidualFormProps {
   onSubmit: (values: ResidualFormValues) => Promise<void>;
   onCancel: () => void;
+  initialValues?: ResidualFormValues;
 }
 
 export interface ResidualFormValues {
@@ -20,8 +21,10 @@ export interface ResidualFormValues {
   periodEnd: Date;
 }
 
-export function ResidualForm({ onSubmit, onCancel }: ResidualFormProps) {
-  const form = useForm<ResidualFormValues>();
+export function ResidualForm({ onSubmit, onCancel, initialValues }: ResidualFormProps) {
+  const form = useForm<ResidualFormValues>({
+    defaultValues: initialValues,
+  });
 
   const { data: accounts } = useQuery({
     queryKey: ["accounts"],
@@ -56,7 +59,9 @@ export function ResidualForm({ onSubmit, onCancel }: ResidualFormProps) {
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit">Create Residual</Button>
+          <Button type="submit">
+            {initialValues ? "Update" : "Create"} Residual
+          </Button>
         </div>
       </form>
     </Form>
