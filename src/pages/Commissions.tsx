@@ -25,14 +25,6 @@ import { CommissionForm } from "@/components/commissions/CommissionForm";
 import { AccountFilter } from "@/components/shared/AccountFilter";
 import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
 
-interface Commission {
-  id: string;
-  account_id: string;
-  rate: number;
-  amount: number;
-  transaction_date: string;
-}
-
 const Commissions = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -74,6 +66,7 @@ const Commissions = () => {
       return data as Commission[];
     },
   });
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -121,10 +114,10 @@ const Commissions = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Commissions</h1>
-        <Button onClick={() => setIsFormOpen(true)}>Add Commission</Button>
-      </div>
+      <CommissionHeader
+        onNewClick={() => setIsFormOpen(true)}
+        onImportClick={() => setIsImportDialogOpen(true)}
+      />
 
       <Card>
         <CardHeader>
@@ -185,6 +178,12 @@ const Commissions = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        type="commissions"
+      />
     </div>
   );
 };

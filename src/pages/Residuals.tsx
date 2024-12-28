@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -22,11 +19,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { ResidualForm, ResidualFormValues } from "@/components/residuals/ResidualForm";
-import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
-import { AccountFilter } from "@/components/shared/AccountFilter";
-import { ResidualTable } from "@/components/residuals/ResidualTable";
+import { ResidualForm } from "@/components/residuals/ResidualForm";
+import { ResidualHeader } from "@/components/residuals/ResidualHeader";
+import { ResidualFilters } from "@/components/residuals/ResidualFilters";
+import { ResidualList } from "@/components/residuals/ResidualList";
+import { BulkImportDialog } from "@/components/shared/BulkImportDialog";
 
 const Residuals = () => {
   const { toast } = useToast();
@@ -42,21 +39,9 @@ const Residuals = () => {
     to: endOfMonth(new Date()),
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [selectedResidual, setSelectedResidual] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("accounts")
-        .select("id, name")
-        .order("name");
-
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: residuals, isLoading } = useQuery({
     queryKey: ["residuals", sortBy, sortOrder, selectedAccount, dateRange],
@@ -89,68 +74,6 @@ const Residuals = () => {
       }
 
       return data;
-    },
-  });
-
-  const createResidual = useMutation({
-    mutationFn: async (values: ResidualFormValues) => {
-      const { error } = await supabase.from("residuals").insert({
-        account_id: values.accountId,
-        amount: values.amount,
-        rate: values.rate,
-        period_start: format(values.periodStart, "yyyy-MM-dd"),
-        period_end: format(values.periodEnd, "yyyy-MM-dd"),
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["residuals"] });
-      toast({
-        title: "Success",
-        description: "Residual created successfully",
-      });
-      setIsDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error creating residual",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateResidual = useMutation({
-    mutationFn: async (values: ResidualFormValues & { id: string }) => {
-      const { error } = await supabase
-        .from("residuals")
-        .update({
-          account_id: values.accountId,
-          amount: values.amount,
-          rate: values.rate,
-          period_start: format(values.periodStart, "yyyy-MM-dd"),
-          period_end: format(values.periodEnd, "yyyy-MM-dd"),
-        })
-        .eq("id", values.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["residuals"] });
-      toast({
-        title: "Success",
-        description: "Residual updated successfully",
-      });
-      setIsDialogOpen(false);
-      setSelectedResidual(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error updating residual",
-        description: error.message,
-        variant: "destructive",
-      });
     },
   });
 
@@ -190,10 +113,6 @@ const Residuals = () => {
     }
   };
 
-  const handleCreateResidual = async (values: ResidualFormValues) => {
-    await createResidual.mutate(values);
-  };
-
   const handleEditResidual = (residual: any) => {
     setSelectedResidual({
       ...residual,
@@ -202,11 +121,6 @@ const Residuals = () => {
       accountId: residual.account_id,
     });
     setIsDialogOpen(true);
-  };
-
-  const handleUpdateResidual = async (values: ResidualFormValues) => {
-    if (!selectedResidual) return;
-    await updateResidual.mutate({ ...values, id: selectedResidual.id });
   };
 
   const handleDeleteClick = (residual: any) => {
@@ -221,67 +135,51 @@ const Residuals = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Residuals</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+      <ResidualHeader
+        onNewClick={() => setIsDialogOpen(true)}
+        onImportClick={() => setIsImportDialogOpen(true)}
+      />
+
+      <ResidualFilters
+        selectedAccount={selectedAccount}
+        onAccountChange={setSelectedAccount}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+      />
+
+      <ResidualList
+        residuals={residuals || []}
+        isLoading={isLoading}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
+        onEdit={handleEditResidual}
+        onDelete={handleDeleteClick}
+      />
+
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) setSelectedResidual(null);
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Residual
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {selectedResidual ? "Edit Residual" : "Create New Residual"}
-              </DialogTitle>
-            </DialogHeader>
-            <ResidualForm
-              onSubmit={selectedResidual ? handleUpdateResidual : handleCreateResidual}
-              onCancel={() => {
-                setIsDialogOpen(false);
-                setSelectedResidual(null);
-              }}
-              initialValues={selectedResidual}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Residual History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4">
-            <AccountFilter
-              accounts={accounts}
-              selectedAccount={selectedAccount}
-              onAccountChange={setSelectedAccount}
-            />
-            <DateRangeFilter
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-4">Loading residuals...</div>
-          ) : (
-            <ResidualTable
-              residuals={residuals}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSort={handleSort}
-              onEdit={handleEditResidual}
-              onDelete={handleDeleteClick}
-            />
-          )}
-        </CardContent>
-      </Card>
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedResidual ? "Edit Residual" : "Create New Residual"}
+            </DialogTitle>
+          </DialogHeader>
+          <ResidualForm
+            onSubmit={selectedResidual ? handleUpdateResidual : handleCreateResidual}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              setSelectedResidual(null);
+            }}
+            initialValues={selectedResidual}
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -297,6 +195,12 @@ const Residuals = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        type="residuals"
+      />
     </div>
   );
 };
