@@ -104,6 +104,32 @@ const Residuals = () => {
     },
   });
 
+  const handleCreateResidual = async (values: any) => {
+    const { error } = await supabase
+      .from('residuals')
+      .insert([values]);
+    
+    if (error) throw error;
+    
+    queryClient.invalidateQueries({ queryKey: ['residuals'] });
+    setIsDialogOpen(false);
+  };
+
+  const handleUpdateResidual = async (values: any) => {
+    if (!selectedResidual) return;
+    
+    const { error } = await supabase
+      .from('residuals')
+      .update(values)
+      .eq('id', selectedResidual.id);
+    
+    if (error) throw error;
+    
+    queryClient.invalidateQueries({ queryKey: ['residuals'] });
+    setIsDialogOpen(false);
+    setSelectedResidual(null);
+  };
+
   const handleSort = (column: "date" | "amount") => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");

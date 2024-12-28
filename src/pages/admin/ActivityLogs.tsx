@@ -9,6 +9,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+interface ActivityLog {
+  id: string;
+  action: string;
+  entity_type: string;
+  details: any;
+  created_at: string;
+  profiles: {
+    full_name: string | null;
+  } | null;
+}
+
 export default function ActivityLogs() {
   const { data: logs, isLoading } = useQuery({
     queryKey: ['activity-logs'],
@@ -24,7 +35,7 @@ export default function ActivityLogs() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as ActivityLog[];
     },
   });
 

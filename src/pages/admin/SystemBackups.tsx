@@ -13,6 +13,23 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 
+interface BackupData {
+  accounts: any[];
+  commissions: any[];
+  residuals: any[];
+  timestamp: string;
+}
+
+interface SystemBackup {
+  id: string;
+  description: string | null;
+  created_at: string;
+  backup_data: BackupData;
+  profiles: {
+    full_name: string | null;
+  } | null;
+}
+
 export default function SystemBackups() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,13 +49,12 @@ export default function SystemBackups() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as SystemBackup[];
     },
   });
 
   const createBackupMutation = useMutation({
     mutationFn: async () => {
-      // First, fetch all necessary data
       const [accounts, commissions, residuals] = await Promise.all([
         supabase.from('accounts').select('*'),
         supabase.from('commissions').select('*'),
@@ -87,16 +103,16 @@ export default function SystemBackups() {
         .single();
 
       if (!backup) throw new Error("Backup not found");
+      const backupData = backup.backup_data as BackupData;
 
-      // Restore data in sequence
       await supabase.from('accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('accounts').insert(backup.backup_data.accounts);
+      await supabase.from('accounts').insert(backupData.accounts);
       
       await supabase.from('commissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('commissions').insert(backup.backup_data.commissions);
+      await supabase.from('commissions').insert(backupData.commissions);
       
       await supabase.from('residuals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('residuals').insert(backup.backup_data.residuals);
+      await supabase.from('residuals').insert(backupData.residuals);
     },
     onSuccess: () => {
       queryClient.invalidateQueries();

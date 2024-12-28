@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportDateRange } from "@/components/reports/ReportDateRange";
 import { AccountSummary } from "@/components/reports/AccountSummary";
 import { exportToCSV, exportToPDF } from "@/utils/export";
-import { FileDown, FilePdf } from "lucide-react";
+import { FileDown, FileText } from "lucide-react";
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState({
@@ -60,7 +60,7 @@ const Reports = () => {
             Export CSV
           </Button>
           <Button variant="outline" onClick={handleExportPDF}>
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
         </div>

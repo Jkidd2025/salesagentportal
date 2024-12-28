@@ -22,12 +22,12 @@ export const ResidualFilters = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <AccountFilter
-          value={selectedAccount}
-          onChange={onAccountChange}
+          selectedAccount={selectedAccount}
+          onAccountChange={onAccountChange}
         />
         <DateRangeFilter
-          value={dateRange}
-          onChange={onDateRangeChange}
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
         />
       </CardContent>
     </Card>
