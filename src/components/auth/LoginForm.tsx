@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, ShieldCheck, User } from "lucide-react";
+import { createOrUpdateTestUser } from "@/utils/auth";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -15,76 +16,43 @@ export const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const createTestUser = async (email: string, password: string, isAdmin: boolean) => {
-    try {
-      // First try to sign up
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: isAdmin ? "Admin User" : "Regular User",
-          }
-        }
-      });
-
-      if (signUpError && signUpError.message !== "User already registered") {
-        throw signUpError;
-      }
-
-      // If user exists or was created, update their profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: (await supabase.auth.getUser()).data.user?.id,
-          full_name: isAdmin ? "Admin User" : "Regular User",
-          is_admin: isAdmin,
-          status: 'active'
-        });
-
-      if (updateError) {
-        throw updateError;
-      }
-
-    } catch (error: any) {
-      console.error("Error creating test user:", error);
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        // If login fails and it's a test account, try to create it
-        if ((email === 'admin@example.com' && password === 'admin123') ||
-            (email === 'user@example.com' && password === 'user123')) {
-          await createTestUser(email, password, email === 'admin@example.com');
-          // Try logging in again
-          const { error: retryError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          
-          if (retryError) {
-            throw retryError;
-          }
-        } else {
-          throw error;
-        }
+      let result;
+      
+      // Check if it's a test account
+      if ((email === 'admin@example.com' && password === 'admin123') ||
+          (email === 'user@example.com' && password === 'user123')) {
+        // Handle test account login/creation
+        result = await createOrUpdateTestUser(
+          email, 
+          password, 
+          email === 'admin@example.com'
+        );
+      } else {
+        // Regular login attempt
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        result = { user: data.user, error };
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (!result.user) {
+        throw new Error("No user returned after login/signup");
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin, full_name')
-        .eq('id', user?.id)
+        .eq('id', result.user.id)
         .single();
 
       toast({
