@@ -12,19 +12,19 @@ interface Account {
 }
 
 interface AccountFilterProps {
+  value: string;
+  onChange: (value: string) => void;
   accounts?: Account[];
-  selectedAccount: string;
-  onAccountChange: (value: string) => void;
 }
 
 export function AccountFilter({
+  value,
+  onChange,
   accounts,
-  selectedAccount,
-  onAccountChange,
 }: AccountFilterProps) {
   return (
     <div className="w-[200px]">
-      <Select value={selectedAccount} onValueChange={onAccountChange}>
+      <Select value={value} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder="Filter by account" />
         </SelectTrigger>

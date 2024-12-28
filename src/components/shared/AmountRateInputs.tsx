@@ -1,11 +1,18 @@
-import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 
 interface AmountRateInputsProps {
-  form: UseFormReturn<any>;
+  amount: number;
+  onAmountChange: (value: number) => void;
+  rate: number;
+  onRateChange: (value: number) => void;
 }
 
-export function AmountRateInputs({ form }: AmountRateInputsProps) {
+export function AmountRateInputs({ 
+  amount, 
+  onAmountChange, 
+  rate, 
+  onRateChange 
+}: AmountRateInputsProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -13,7 +20,8 @@ export function AmountRateInputs({ form }: AmountRateInputsProps) {
         <Input
           type="number"
           step="0.01"
-          {...form.register("amount", { valueAsNumber: true })}
+          value={amount}
+          onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
           placeholder="Enter amount"
         />
       </div>
@@ -23,7 +31,8 @@ export function AmountRateInputs({ form }: AmountRateInputsProps) {
         <Input
           type="number"
           step="0.1"
-          {...form.register("rate", { valueAsNumber: true })}
+          value={rate}
+          onChange={(e) => onRateChange(parseFloat(e.target.value) || 0)}
           placeholder="Enter rate"
         />
       </div>

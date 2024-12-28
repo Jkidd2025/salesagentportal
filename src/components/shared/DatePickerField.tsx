@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { UseFormReturn } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,12 +10,12 @@ import {
 } from "@/components/ui/popover";
 
 interface DatePickerFieldProps {
-  form: UseFormReturn<any>;
-  name: string;
   label: string;
+  value: Date;
+  onChange: (date: Date) => void;
 }
 
-export function DatePickerField({ form, name, label }: DatePickerFieldProps) {
+export function DatePickerField({ label, value, onChange }: DatePickerFieldProps) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
@@ -26,11 +25,11 @@ export function DatePickerField({ form, name, label }: DatePickerFieldProps) {
             variant={"outline"}
             className={cn(
               "w-full pl-3 text-left font-normal",
-              !form.watch(name) && "text-muted-foreground"
+              !value && "text-muted-foreground"
             )}
           >
-            {form.watch(name) ? (
-              format(form.watch(name), "PPP")
+            {value ? (
+              format(value, "PPP")
             ) : (
               <span>Pick a date</span>
             )}
@@ -40,8 +39,8 @@ export function DatePickerField({ form, name, label }: DatePickerFieldProps) {
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={form.watch(name)}
-            onSelect={(date) => form.setValue(name, date)}
+            selected={value}
+            onSelect={(date) => date && onChange(date)}
             disabled={(date) =>
               date > new Date() || date < new Date("1900-01-01")
             }
