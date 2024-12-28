@@ -2,14 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export async function createOrUpdateTestUser(email: string, password: string, isAdmin: boolean) {
   try {
-    // First try to sign in
+    // First check if user exists by trying to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // If sign in successful, just update profile
+    // If sign in successful, update profile and return
     if (signInData.user) {
+      console.log("Test user exists, updating profile:", email);
+      
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -27,9 +29,9 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       return { user: signInData.user, error: null };
     }
 
-    // If sign in failed, try to create the user
+    // If user doesn't exist (sign in failed), create new user
     if (signInError) {
-      console.log("Sign in failed, attempting to create user:", email);
+      console.log("Creating new test user:", email);
       
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -37,7 +39,8 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         options: {
           data: {
             full_name: isAdmin ? "Admin User" : "Regular User",
-          }
+          },
+          emailRedirectTo: window.location.origin
         }
       });
 
@@ -50,7 +53,7 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         throw new Error("No user returned after signup");
       }
 
-      // Try signing in again after creating the user
+      // After creating user, try signing in
       const { data: newSignInData, error: newSignInError } = await supabase.auth.signInWithPassword({
         email,
         password,
