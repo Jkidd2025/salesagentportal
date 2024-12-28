@@ -26,6 +26,7 @@ export const LoginForm = () => {
       // Check if it's a test account
       if ((email === 'admin@example.com' && password === 'admin123') ||
           (email === 'user@example.com' && password === 'user123')) {
+        console.log("Attempting test account login:", email);
         // Handle test account login/creation
         result = await createOrUpdateTestUser(
           email, 
@@ -33,6 +34,7 @@ export const LoginForm = () => {
           email === 'admin@example.com'
         );
       } else {
+        console.log("Attempting regular login:", email);
         // Regular login attempt
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -42,6 +44,7 @@ export const LoginForm = () => {
       }
 
       if (result.error) {
+        console.error("Login error:", result.error);
         throw result.error;
       }
 
@@ -56,13 +59,14 @@ export const LoginForm = () => {
         .single();
 
       toast({
-        title: `Welcome ${profile?.full_name}!`,
+        title: `Welcome ${profile?.full_name || 'back'}!`,
         description: `You are logged in as a${profile?.is_admin ? 'n admin' : ' regular'} user.`,
         variant: "default",
       });
 
       navigate("/dashboard");
     } catch (error: any) {
+      console.error("Login form error:", error);
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred. Please try again.",
