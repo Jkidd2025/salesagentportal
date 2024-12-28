@@ -9,6 +9,10 @@ import Dashboard from "@/pages/Dashboard";
 import Accounts from "@/pages/Accounts";
 import Commissions from "@/pages/Commissions";
 import Residuals from "@/pages/Residuals";
+import UserManagement from "@/pages/admin/UserManagement";
+import SystemSettings from "@/pages/admin/SystemSettings";
+import ActivityLogs from "@/pages/admin/ActivityLogs";
+import SystemBackups from "@/pages/admin/SystemBackups";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +30,12 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/commissions" element={<Commissions />} />
             <Route path="/residuals" element={<Residuals />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/users" element={<AuthGuard requireAdmin={true}><UserManagement /></AuthGuard>} />
+            <Route path="/admin/settings" element={<AuthGuard requireAdmin={true}><SystemSettings /></AuthGuard>} />
+            <Route path="/admin/logs" element={<AuthGuard requireAdmin={true}><ActivityLogs /></AuthGuard>} />
+            <Route path="/admin/backups" element={<AuthGuard requireAdmin={true}><SystemBackups /></AuthGuard>} />
           </Route>
         </Routes>
       </Router>
