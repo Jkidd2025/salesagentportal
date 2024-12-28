@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UseFormReturn } from "react-hook-form";
 
 interface Account {
   id: string;
@@ -12,17 +13,18 @@ interface Account {
 }
 
 interface AccountSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
+  form: UseFormReturn<any>;
   accounts?: Account[];
 }
 
-export function AccountSelect({ value, onChange, required, accounts }: AccountSelectProps) {
+export function AccountSelect({ form, accounts }: AccountSelectProps) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Account</label>
-      <Select value={value} onValueChange={onChange}>
+      <Select 
+        value={form.watch("accountId")} 
+        onValueChange={(value) => form.setValue("accountId", value)}
+      >
         <SelectTrigger>
           <SelectValue placeholder="Select an account" />
         </SelectTrigger>

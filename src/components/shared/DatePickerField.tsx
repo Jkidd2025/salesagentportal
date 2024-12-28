@@ -8,14 +8,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { UseFormReturn } from "react-hook-form";
 
 interface DatePickerFieldProps {
+  form: UseFormReturn<any>;
+  name: string;
   label: string;
-  value: Date;
-  onChange: (date: Date) => void;
 }
 
-export function DatePickerField({ label, value, onChange }: DatePickerFieldProps) {
+export function DatePickerField({ form, name, label }: DatePickerFieldProps) {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
@@ -25,11 +26,11 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
             variant={"outline"}
             className={cn(
               "w-full pl-3 text-left font-normal",
-              !value && "text-muted-foreground"
+              !form.watch(name) && "text-muted-foreground"
             )}
           >
-            {value ? (
-              format(value, "PPP")
+            {form.watch(name) ? (
+              format(form.watch(name), "PPP")
             ) : (
               <span>Pick a date</span>
             )}
@@ -39,8 +40,8 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={value}
-            onSelect={(date) => date && onChange(date)}
+            selected={form.watch(name)}
+            onSelect={(date) => form.setValue(name, date)}
             disabled={(date) =>
               date > new Date() || date < new Date("1900-01-01")
             }
