@@ -9,7 +9,7 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       password,
     });
 
-    // If sign in successful, just update profile
+    // If sign in successful, return the user
     if (signInData?.user) {
       console.log("Test user exists, updating profile:", email);
       
@@ -20,8 +20,6 @@ export async function createOrUpdateTestUser(email: string, password: string, is
           full_name: isAdmin ? "Admin User" : "Regular User",
           is_admin: isAdmin,
           status: 'active'
-        }, {
-          onConflict: 'id'
         });
 
       if (profileError) {
@@ -32,8 +30,8 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       return { user: signInData.user, error: null };
     }
 
-    // If sign in failed, try to create the user
-    if (signInError) {
+    // If sign in failed due to invalid credentials, create the user
+    if (signInError?.message.includes("Invalid login credentials")) {
       console.log("Creating new test user:", email);
       
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -55,10 +53,7 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         throw new Error("No user returned after signup");
       }
 
-      // Wait a moment for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Try signing in with the new credentials
+      // Try signing in with the new credentials immediately
       console.log("Signing in with new credentials:", email);
       const { data: newSignInData, error: newSignInError } = await supabase.auth.signInWithPassword({
         email,
@@ -70,23 +65,11 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         throw newSignInError;
       }
 
-      // Update the profile with admin status if needed
-      if (isAdmin) {
-        const { error: adminUpdateError } = await supabase
-          .from('profiles')
-          .update({ is_admin: true })
-          .eq('id', newSignInData.user.id);
-
-        if (adminUpdateError) {
-          console.error("Error updating admin status:", adminUpdateError);
-          throw adminUpdateError;
-        }
-      }
-
       return { user: newSignInData.user, error: null };
     }
 
-    throw new Error("Unexpected flow in createOrUpdateTestUser");
+    // If sign in failed for other reasons, throw the error
+    throw signInError;
   } catch (error: any) {
     console.error("Error in createOrUpdateTestUser:", error);
     return { user: null, error };

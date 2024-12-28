@@ -45,8 +45,11 @@ export const LoginForm = () => {
       }
 
       if (!result.user) {
-        throw new Error("No user returned after login/signup");
+        throw new Error("No user returned after login");
       }
+
+      // Wait a moment for the profile to be created
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const { data: profile } = await supabase
         .from('profiles')
