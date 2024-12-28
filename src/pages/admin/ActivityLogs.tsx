@@ -13,8 +13,10 @@ interface ActivityLog {
   id: string;
   action: string;
   entity_type: string;
+  entity_id: string | null;
   details: any;
   created_at: string;
+  user_id: string | null;
   profiles: {
     full_name: string | null;
   } | null;
@@ -35,7 +37,7 @@ export default function ActivityLogs() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as ActivityLog[];
+      return data as unknown as ActivityLog[];
     },
   });
 

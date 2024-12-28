@@ -25,6 +25,7 @@ interface SystemBackup {
   description: string | null;
   created_at: string;
   backup_data: BackupData;
+  created_by: string | null;
   profiles: {
     full_name: string | null;
   } | null;
@@ -49,22 +50,22 @@ export default function SystemBackups() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as SystemBackup[];
+      return data as unknown as SystemBackup[];
     },
   });
 
   const createBackupMutation = useMutation({
     mutationFn: async () => {
-      const [accounts, commissions, residuals] = await Promise.all([
+      const [accountsResult, commissionsResult, residualsResult] = await Promise.all([
         supabase.from('accounts').select('*'),
         supabase.from('commissions').select('*'),
         supabase.from('residuals').select('*'),
       ]);
 
-      const backupData = {
-        accounts: accounts.data,
-        commissions: commissions.data,
-        residuals: residuals.data,
+      const backupData: BackupData = {
+        accounts: accountsResult.data || [],
+        commissions: commissionsResult.data || [],
+        residuals: residualsResult.data || [],
         timestamp: new Date().toISOString(),
       };
 
@@ -103,16 +104,18 @@ export default function SystemBackups() {
         .single();
 
       if (!backup) throw new Error("Backup not found");
+      
       const backupData = backup.backup_data as BackupData;
 
+      // Delete existing data
       await supabase.from('accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('accounts').insert(backupData.accounts);
-      
       await supabase.from('commissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('commissions').insert(backupData.commissions);
-      
       await supabase.from('residuals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('residuals').insert(backupData.residuals);
+
+      // Restore from backup
+      if (backupData.accounts.length) await supabase.from('accounts').insert(backupData.accounts);
+      if (backupData.commissions.length) await supabase.from('commissions').insert(backupData.commissions);
+      if (backupData.residuals.length) await supabase.from('residuals').insert(backupData.residuals);
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
