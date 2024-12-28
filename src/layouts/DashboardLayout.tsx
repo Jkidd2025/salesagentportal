@@ -76,15 +76,13 @@ export const DashboardLayout = () => {
               <LayoutDashboard className="w-4 h-4 mr-3" />
               Dashboard
             </Link>
-            {isAdmin && (
-              <Link
-                to="/accounts"
-                className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
-              >
-                <Users className="w-4 h-4 mr-3" />
-                Accounts
-              </Link>
-            )}
+            <Link
+              to="/accounts"
+              className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
+            >
+              <Users className="w-4 h-4 mr-3" />
+              Accounts
+            </Link>
             <Link
               to="/commissions"
               className="flex items-center px-3 py-2 text-sm text-sidebar-foreground rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
