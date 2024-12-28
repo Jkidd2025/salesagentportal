@@ -46,14 +46,17 @@ export const BulkImportDialog = ({
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-
-      const { data: { publicUrl } } = await supabase
+      const { data, error: uploadError } = await supabase
         .storage
         .from('imports')
         .upload(`${type}/${Date.now()}-${file.name}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+      formData.append("path", data.path);
 
       const response = await fetch("/api/process-import", {
         method: "POST",

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Commission } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +25,11 @@ import { CommissionTable } from "@/components/commissions/CommissionTable";
 import { CommissionForm } from "@/components/commissions/CommissionForm";
 import { AccountFilter } from "@/components/shared/AccountFilter";
 import { DateRangeFilter } from "@/components/shared/DateRangeFilter";
+import { BulkImportDialog } from "@/components/shared/BulkImportDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const Commissions = () => {
+export default function Commissions() {
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -33,6 +37,7 @@ const Commissions = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const { data: commissions, isLoading } = useQuery({
     queryKey: ["commissions", selectedAccountId, dateRange],
@@ -66,7 +71,6 @@ const Commissions = () => {
       return data as Commission[];
     },
   });
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -114,21 +118,33 @@ const Commissions = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <CommissionHeader
-        onNewClick={() => setIsFormOpen(true)}
-        onImportClick={() => setIsImportDialogOpen(true)}
-      />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-2xl font-bold">Commissions</h1>
+        <div className="flex flex-col md:flex-row gap-2">
+          <Button onClick={() => setIsFormOpen(true)}>Add Commission</Button>
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            Import
+          </Button>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <AccountFilter
-            value={selectedAccountId}
-            onChange={setSelectedAccountId}
-          />
-          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <div className="flex flex-col md:flex-row gap-4">
+            <AccountFilter
+              selectedAccount={selectedAccountId || "all"}
+              onAccountChange={setSelectedAccountId}
+              isLoading={isLoading}
+            />
+            <DateRangeFilter
+              dateRange={dateRange || { from: new Date(), to: new Date() }}
+              onDateRangeChange={setDateRange}
+              isLoading={isLoading}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -137,20 +153,22 @@ const Commissions = () => {
           <CardTitle>Commission List</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-center py-4">Loading commissions...</div>
-          ) : (
-            <CommissionTable
-              commissions={commissions || []}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          )}
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="text-center py-4">Loading commissions...</div>
+            ) : (
+              <CommissionTable
+                commissions={commissions || []}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            )}
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
               {selectedCommission ? "Edit Commission" : "Add Commission"}
@@ -186,6 +204,4 @@ const Commissions = () => {
       />
     </div>
   );
-};
-
-export default Commissions;
+}
