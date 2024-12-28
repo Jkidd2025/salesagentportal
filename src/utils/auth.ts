@@ -2,18 +2,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 export async function createOrUpdateTestUser(email: string, password: string, isAdmin: boolean) {
   try {
-    // First check if user exists by trying to sign in
+    // First try to sign in
     console.log("Attempting to sign in test user:", email);
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // If sign in successful, update profile and return user
-    if (signInData?.user) {
+    if (!signInError && signInData?.user) {
       console.log("Test user exists, updating profile:", email);
       
-      // Update profile with admin status
+      // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -21,6 +20,8 @@ export async function createOrUpdateTestUser(email: string, password: string, is
           full_name: isAdmin ? "Admin User" : "Regular User",
           is_admin: isAdmin,
           status: 'active'
+        }, {
+          onConflict: 'id'
         });
 
       if (profileError) {
@@ -28,13 +29,10 @@ export async function createOrUpdateTestUser(email: string, password: string, is
         throw profileError;
       }
 
-      // Wait for profile update to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       return { user: signInData.user, error: null };
     }
 
-    // If user doesn't exist, create new user
+    // If sign in failed, create new user
     console.log("Creating new test user:", email);
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -70,18 +68,23 @@ export async function createOrUpdateTestUser(email: string, password: string, is
       throw newSignInError;
     }
 
-    // Update the profile with admin status if needed
-    if (isAdmin) {
-      const { error: adminUpdateError } = await supabase
-        .from('profiles')
-        .update({ is_admin: true })
-        .eq('id', newSignInData.user.id);
+    // Update the profile with admin status
+    const { error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({ 
+        is_admin: isAdmin,
+        status: 'active',
+        full_name: isAdmin ? "Admin User" : "Regular User"
+      })
+      .eq('id', newSignInData.user.id);
 
-      if (adminUpdateError) {
-        console.error("Error updating admin status:", adminUpdateError);
-        throw adminUpdateError;
-      }
+    if (profileUpdateError) {
+      console.error("Error updating profile:", profileUpdateError);
+      throw profileUpdateError;
     }
+
+    // Wait for profile update to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     return { user: newSignInData.user, error: null };
   } catch (error: any) {
