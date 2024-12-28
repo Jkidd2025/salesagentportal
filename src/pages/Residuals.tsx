@@ -23,7 +23,7 @@ const Residuals = () => {
   const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [selectedAccount, setSelectedAccount] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{
     from: Date;
     to: Date;
@@ -61,7 +61,7 @@ const Residuals = () => {
           ascending: sortOrder === "asc",
         });
 
-      if (selectedAccount) {
+      if (selectedAccount !== "all") {
         query = query.eq("account_id", selectedAccount);
       }
 
