@@ -3,22 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AccountEditDialog } from "@/components/accounts/AccountEditDialog";
+import { AccountTable } from "@/components/accounts/AccountTable";
+import { AccountSearch } from "@/components/accounts/AccountSearch";
+import { AccountMetrics } from "@/components/accounts/AccountMetrics";
 
 interface Account {
   id: string;
@@ -59,18 +51,13 @@ const Accounts = () => {
     account.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Accounts</h1>
       </div>
+
+      <AccountMetrics accounts={filteredAccounts || []} />
 
       <Card>
         <CardHeader>
@@ -78,66 +65,13 @@ const Accounts = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <Input
-              placeholder="Search accounts..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+            <AccountSearch value={searchTerm} onChange={setSearchTerm} />
           </div>
 
           {isLoading ? (
             <div className="text-center py-4">Loading accounts...</div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Total Commissions</TableHead>
-                    <TableHead>Total Residuals</TableHead>
-                    <TableHead>Last Transaction</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAccounts?.map((account) => (
-                    <TableRow key={account.id}>
-                      <TableCell>{account.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={account.status === "active" ? "default" : "secondary"}
-                        >
-                          {account.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(account.total_commissions)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(account.total_residuals)}
-                      </TableCell>
-                      <TableCell>
-                        {account.last_transaction_date
-                          ? new Date(account.last_transaction_date).toLocaleDateString()
-                          : "No transactions"}
-                      </TableCell>
-                      <TableCell>
-                        <AccountEditDialog account={account} onUpdate={refetch} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredAccounts?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center">
-                        No accounts found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <AccountTable accounts={filteredAccounts || []} onUpdate={refetch} />
           )}
         </CardContent>
       </Card>
