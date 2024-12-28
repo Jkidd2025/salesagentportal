@@ -1,85 +1,90 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AccountSelect } from "@/components/shared/AccountSelect";
 import { AmountRateInputs } from "@/components/shared/AmountRateInputs";
 import { DatePickerField } from "@/components/shared/DatePickerField";
-import { Commission } from "@/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { commissionSchema, type CommissionFormValues } from "@/lib/validations/commission";
 
 interface CommissionFormProps {
-  initialData?: Commission | null;
+  initialData?: CommissionFormValues | null;
   onSuccess: () => void;
 }
 
-export const CommissionForm = ({ initialData, onSuccess }: CommissionFormProps) => {
+export function CommissionForm({ initialData, onSuccess }: CommissionFormProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [formData, setFormData] = useState({
-    accountId: initialData?.account_id || "",
-    rate: initialData?.rate || 0,
-    amount: initialData?.amount || 0,
-    transactionDate: initialData ? new Date(initialData.transaction_date) : new Date(),
+
+  const form = useForm<CommissionFormValues>({
+    resolver: zodResolver(commissionSchema),
+    defaultValues: initialData || {
+      accountId: "",
+      amount: 0,
+      rate: 0,
+      transactionDate: new Date(),
+    },
   });
 
-  const mutation = useMutation({
-    mutationFn: async (data: Omit<Commission, "id" | "created_at">) => {
+  const onSubmit = async (data: CommissionFormValues) => {
+    setLoading(true);
+
+    try {
+      // Check for duplicates
+      const { data: existingCommissions } = await supabase
+        .from("commissions")
+        .select("*")
+        .eq("account_id", data.accountId)
+        .eq("amount", data.amount)
+        .eq("rate", data.rate)
+        .eq("transaction_date", data.transactionDate.toISOString().split("T")[0]);
+
+      if (existingCommissions && existingCommissions.length > 0) {
+        toast({
+          title: "Duplicate Commission",
+          description: "A commission with these exact details already exists.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (initialData) {
         const { error } = await supabase
           .from("commissions")
-          .update(data)
+          .update({
+            account_id: data.accountId,
+            amount: data.amount,
+            rate: data.rate,
+            transaction_date: data.transactionDate.toISOString().split("T")[0],
+          })
           .eq("id", initialData.id);
+
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("commissions").insert([data]);
+        const { error } = await supabase.from("commissions").insert([{
+          account_id: data.accountId,
+          amount: data.amount,
+          rate: data.rate,
+          transaction_date: data.transactionDate.toISOString().split("T")[0],
+        }]);
+
         if (error) throw error;
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["commissions"] });
+
       toast({
         title: "Success",
-        description: `Commission ${initialData ? "updated" : "added"} successfully`,
+        description: `Commission ${initialData ? "updated" : "created"} successfully`,
       });
       onSuccess();
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowConfirmation(true);
-  };
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    setShowConfirmation(false);
-
-    try {
-      await mutation.mutateAsync({
-        account_id: formData.accountId,
-        rate: formData.rate,
-        amount: formData.amount,
-        transaction_date: formData.transactionDate.toISOString(),
       });
     } finally {
       setLoading(false);
@@ -87,55 +92,42 @@ export const CommissionForm = ({ initialData, onSuccess }: CommissionFormProps) 
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <AccountSelect
-          form={{
-            watch: () => formData.accountId,
-            setValue: (_, value) => setFormData({ ...formData, accountId: value }),
-          }}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="accountId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Account</FormLabel>
+              <AccountSelect form={form} {...field} />
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        <AmountRateInputs
-          form={{
-            register: () => ({
-              value: formData.amount,
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, amount: Number(e.target.value) }),
-            }),
-            watch: () => ({ amount: formData.amount, rate: formData.rate }),
-          }}
-        />
-        <DatePickerField
-          form={{
-            watch: () => formData.transactionDate,
-            setValue: (_, value) =>
-              setFormData({ ...formData, transactionDate: value }),
-          }}
+
+        <AmountRateInputs form={form} />
+
+        <FormField
+          control={form.control}
           name="transactionDate"
-          label="Transaction Date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Transaction Date</FormLabel>
+              <DatePickerField
+                form={form}
+                name="transactionDate"
+                label="Transaction Date"
+              />
+              <FormMessage />
+            </FormItem>
+          )}
         />
+
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Saving..." : initialData ? "Update Commission" : "Add Commission"}
         </Button>
       </form>
-
-      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Action</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to {initialData ? "update" : "add"} this commission?
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>
-              {initialData ? "Update" : "Add"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </Form>
   );
-};
+}
