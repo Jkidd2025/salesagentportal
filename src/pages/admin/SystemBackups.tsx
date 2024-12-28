@@ -62,7 +62,7 @@ export default function SystemBackups() {
         supabase.from('residuals').select('*'),
       ]);
 
-      const backupData: BackupData = {
+      const backupData = {
         accounts: accountsResult.data || [],
         commissions: commissionsResult.data || [],
         residuals: residualsResult.data || [],
@@ -72,7 +72,7 @@ export default function SystemBackups() {
       const { error } = await supabase
         .from('system_backups')
         .insert({
-          backup_data: backupData,
+          backup_data: backupData as unknown as Json,
           description,
         });
       
@@ -105,7 +105,7 @@ export default function SystemBackups() {
 
       if (!backup) throw new Error("Backup not found");
       
-      const backupData = backup.backup_data as BackupData;
+      const backupData = backup.backup_data as unknown as BackupData;
 
       // Delete existing data
       await supabase.from('accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
